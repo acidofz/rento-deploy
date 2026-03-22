@@ -1,0 +1,15 @@
+{
+  "name": "rento-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:web": "cd rento-web && npm install && npm run build",
+    "build": "npm run build:web",
+    "start": "node rento-backend/index.js"   
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": "18.x || 20.x"
+  }
+}
