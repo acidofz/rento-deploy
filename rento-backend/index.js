@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const app = express();
+const supabase = require('./lib/supabase');
 
 // Твои API роуты (пример) — монтируем на /api, чтобы не конфликтовали с фронтом
 app.use('/api/auth', require('./routes/auth'));       // если файл routes/auth.js существует
@@ -24,6 +25,26 @@ app.get('/*path', (req, res) => {
 
   // Отдаём index.html для React Router (SPA)
   res.sendFile(path.join(staticPath, 'index.html'));
+});
+
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('listings') // замени на имя твоей таблицы
+      .select('*')
+      .limit(1);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data,
+      message: 'Подключение к Supabase работает!'
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Экспорт для Vercel serverless (без app.listen!)
