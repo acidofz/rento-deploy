@@ -1,18 +1,18 @@
-// lib/supabase.js
-require('dotenv').config(); // если не подключаешь в index.js
-
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = 'https://xwaqtnhwvvoxofhrteju.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YXF0bmh3dnZveG9maHJ0ZWp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODMxODAsImV4cCI6MjA4OTc1OTE4MH0.JW8SLteEUVRgVdfWLMtObyo_u3CGS9V1aNc5Yz03O7U'; // или SUPABASE_SERVICE_ROLE_KEY для полного доступа
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3YXF0bmh3dnZveG9maHJ0ZWp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODMxODAsImV4cCI6MjA4OTc1OTE4MH0.JW8SLteEUVRgVdfWLMtObyo_u3CGS9V1aNc5Yz03O7U';
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Отсутствуют переменные SUPABASE_URL или SUPABASE_KEY');
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase env vars missing!');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Опционально: для realtime или auth
-// supabase.auth.onAuthStateChange((event, session) => { ... });
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+});
 
 module.exports = supabase;

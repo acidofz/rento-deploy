@@ -1,51 +1,67 @@
 const express = require('express');
 const path = require('path');
 const app = express();
+
+// Импорт клиента Supabase (из отдельного файла)
 const supabase = require('./lib/supabase');
 
-// Твои API роуты (пример) — монтируем на /api, чтобы не конфликтовали с фронтом
-app.use('/api/auth', require('./routes/auth'));       // если файл routes/auth.js существует
-app.use('/api/contracts', require('./routes/contracts')); // если routes/contracts.js
-app.use('/api/listings', require('./routes/listings'));   // если routes/listings.js
+// Парсинг JSON (если ещё не добавлен)
+app.use(express.json());
 
-// Если у тебя несколько роутов на /api — лучше монтировать их отдельно, а не все на один /api
-// Пример: app.use('/api', require('./routes')); — если есть routes/index.js
+// Твои API роуты (пример)
+app.use('/api/auth', require('./routes/auth'));       // если файл существует
+app.use('/api/contracts', require('./routes/contracts')); // если файл существует
+app.use('/api/listings', require('./routes/listings'));   // если файл существует
 
-// Раздача статических файлов фронта (после npm run build в rento-web)
-const staticPath = path.join(__dirname, '../rento-web/dist'); // dist для Vite, build для CRA
+// Раздача статических файлов фронтенда
+const staticPath = path.join(__dirname, '../rento-web/dist');
 app.use(express.static(staticPath));
 
-// SPA fallback — catch-all для всех НЕ-API запросов
-// В Express 5 используем /*path (именованный wildcard)
-app.get('/*path', (req, res) => {
-  // Защита: если запрос начинается с /api/ — 404 JSON (чтобы не отдавать index.html на API)
-  if (req.url.startsWith('/api/')) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-
-  // Отдаём index.html для React Router (SPA)
-  res.sendFile(path.join(staticPath, 'index.html'));
-});
-
+// Тестовый маршрут для проверки Supabase
 app.get('/api/test-db', async (req, res) => {
+  console.log('→ Запрос /api/test-db');
+
   try {
+    console.log('→ Проверка env vars:');
+    console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? 'есть' : 'ОТСУТСТВУЕТ');
+    console.log('  SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? `есть (${process.env.SUPABASE_ANON_KEY.length} символов)` : 'ОТСУТСТВУЕТ');
+
+    console.log('→ Выполняем тестовый запрос к таблице listings');
     const { data, error } = await supabase
-      .from('listings') // замени на имя твоей таблицы
+      .from('listings')
       .select('*')
       .limit(1);
 
-    if (error) throw error;
+    if (error) {
+      console.error('→ Ошибка Supabase:', error.message, error.code, error.details);
+      throw error;
+    }
+
+    console.log('→ Запрос успешен, получено записей:', data.length);
 
     res.json({
       success: true,
-      data,
+      data: data || [],
       message: 'Подключение к Supabase работает!'
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error('→ Полная ошибка в /api/test-db:', err.message);
+    console.error(err.stack || err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Internal server error',
+      hint: 'Проверь логи Vercel и переменные окружения'
+    });
   }
 });
 
-// Экспорт для Vercel serverless (без app.listen!)
+// SPA fallback — catch-all для фронтенда (должен быть последним!)
+app.get('/*path', (req, res) => {
+  if (req.url.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.sendFile(path.join(staticPath, 'index.html'));
+});
+
+// Экспорт для Vercel
 module.exports = app;
